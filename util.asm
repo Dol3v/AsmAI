@@ -1,7 +1,7 @@
 
 ; Useful macros for the rest of the code
 
-STDOUT_HNDL = 1
+STDOUT_HNDL equ 1
 
 section .text
 
@@ -17,11 +17,18 @@ section .text
         mov rsi, %1
         mov rax, 1
         mov rdx, 13
-        mov rdi
+        mov rdi, STDOUT_HNDL
         syscall
 
         pop rdx
         pop rax
         pop rsi
         pop rdi
+    %endmacro
+
+    ; Exits the program with error code 0.
+    %macro EXIT 0
+        mov       rax, 60
+        xor       rdi, rdi                
+        syscall
     %endmacro
