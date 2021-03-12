@@ -14,6 +14,7 @@ section .text
     ;   m = 2147483648
     ;   c = 12345
     ;
+    ; TODO: expand range
     ; param seed: an integer containing X_n.
     GetRandomInteger:
         push rbp
@@ -22,7 +23,7 @@ section .text
         push rcx
         push rdx
 
-        mov rax, [rbp+4*2] ;seed
+        mov rax, [rbp+8*2] ;seed
         mov rcx, 2147483648 ;m
     
         mov rax, 1103515245 ;a
@@ -30,10 +31,10 @@ section .text
         add rax, 12345 ;rdx:rax = aX_n + c
         div rcx ;rdx = X_{n+1}
 
-        mov [rbp+4*2], rdx ;outputting to stack
+        mov [rbp+8*2], rdx ;outputting to stack
 
         pop rax
         pop rcx
         pop rdx
         pop rbp
-    ret
+    ret 1*8

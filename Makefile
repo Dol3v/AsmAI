@@ -3,11 +3,22 @@ ASSEMBLER = nasm
 ASM_FLAGS = -felf64
 LINKER = ld
 
-all: a.out
-	./a.out
-	
-main.o: main.asm
-	$(ASSEMBLER) $(ASM_FLAGS) $< -o $@
+#source and object files
+SRCS = main.asm util.asm math.asm
 
-a.out: main.o
-	$(LINKER) $<
+OBJS = $(SRCS:.asm=.o)
+
+OUTPUT = ./a.out
+
+all: $(OUTPUT)
+	$(OUTPUT)
+
+$(OUTPUT): $(OBJS)
+	$(LINKER) $(OBJS)
+
+%.o: %.asm
+	$(ASSEMBLER) $(ASM_FLAGS) $< -o $@
+	@echo "Compiling $<"
+
+clean:
+	rm *.o *.out
