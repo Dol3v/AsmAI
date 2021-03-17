@@ -103,3 +103,17 @@ section .text
         vpaddq %1, %1, %3 
         pop rax
     %endmacro
+
+    ; Definitely the most awesome natural log macro that exists.
+    ;
+    ; param: input, an AVX register
+    ; param: a helper xmm register
+    ; param: a helper AVX register
+    %macro LN 3
+        LOG2 %1, %2, %3
+        push rax
+        mov rax, RECIP_LOG2E
+        BROADCASTREG %3, rax, %2
+        pop rax
+        vmulpd %1, %1, %3
+    %endmacro
