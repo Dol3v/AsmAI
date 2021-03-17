@@ -117,3 +117,17 @@ section .text
         pop rax
         vmulpd %1, %1, %3
     %endmacro
+
+    ; A macro for calculating dot product between two ymm registers.
+    ; *Note: result is in the low 64 bits of the destination.
+    ;
+    ; param %1: destination of calculation
+    ; param %2, %3: operands
+    ; param %4: corresponding xmm register of %1
+    ; param %5: a (different) xmm register
+    %macro DOTPROD 5
+        vmulpd %1, %2, %3 ;dest = [x1*y1,...,x4*y4]
+        vhaddpd %1, %1, %1 ;dest = [x1*y1+x2*y2, x1*y1+x2*y2, x3*y3+x4*y4, x3*y3+x4*y4]
+        vextractf128 %5, %1, 1b ;temp = [x3*y3+x4*y4, same]
+        vaddpd %4, %4, %5 ;dest = [x3*y3+x4*y4+x1*y1, same, garbage]
+    %endmacro
