@@ -9,10 +9,6 @@ MOVE_FIRST_TO_LAST equ 00100100b
 MOVE_FIRST_TO_THIRD equ 11000100b
 MOVE_FIRST_TO_SECOND equ 11100000b
 
-
-section .data
-msg db "REACHED HERE"
-
 section .text
 
     ; Prints a new-line-terminated string to the screen.
@@ -65,6 +61,6 @@ section .text
     ; param: 64-bit register
     ; param: some xmm register
     %macro BROADCASTREG 3
-        vmovq %3, %1
-        vbroadcastsd %2, %3
+        vmovq %3, %2
+        vbroadcastsd %1, %3
     %endmacro
