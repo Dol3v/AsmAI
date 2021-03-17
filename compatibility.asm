@@ -1,6 +1,12 @@
 
 ; Contains compatibility checks for AVX.
 
+%include "util.asm"
+
+section .data
+    AVX2Enabled db "Your computer has AVX2 enabled, proceeding to run the program...", 10
+    AVX2NotEnabled db "Your computer doesn't have AVX2 enabled, exiting the program...", 10
+
 section .text
 
     ; Returns whether the host computer is AVX compatible.
@@ -26,3 +32,33 @@ section .text
         pop rax
         pop rbp
     ret 
+
+    ; Prints to the screen if host computer is AVX2 compatible.
+    ;
+    ; param: addr of AVX2 compatibility message
+    ; param: addr of AVX2 incompatibility message
+    PrintAVX2Compatible:
+        push rbp
+        mov rbp, rsp
+        push rbx
+        push rax
+
+        call IsAVX2Compatible
+        pop rax
+        shr rax, 1
+        jc AVX2_compatible
+
+        mov rbx, [rbp + 8*2] ;incompatibility message offset
+        PRINT rbx
+        jmp PrintAVX2Compatible_finish
+
+    AVX2_compatible:
+        mov rbx, [rbp + 8*3] ;compatibility message offset
+        PRINT rbx
+
+    PrintAVX2Compatible_finish:
+        pop rax
+        pop rbx
+        pop rbp
+    ret
+    
