@@ -76,3 +76,27 @@ section .text
         pop rax
         pop rbp
     ret 1*8
+
+ ; Definitely the most awesome log macro that exists. 
+    ;
+    ; Calculates log_2(x) using floating point bit magic. More specifically,
+    ;
+    ; log2(x) = Ix/L - (bias - log_approx_factor)
+    ;
+    ; param: input, AVX register
+    ; param: a helper xmm register
+    ; param: a helper AVX register
+    ; returns input: returns log_2(input)
+    %macro LOG2 3
+        push rax
+        mov rax, ONE_OVER_MANTISSA_LENGTH ;scaling factor
+        vmovq %2, rax
+        vbroadcastsd %3, %2
+        vpmuludq %1, %1, %3
+
+        mov rax, LOG_SHIFT_FACTOR ;scaling factor
+        vmovq %2, rax
+        vbroadcastsd %3, %2
+        vpaddq %1, %1, %3 
+        pop rax
+    %endmacro
