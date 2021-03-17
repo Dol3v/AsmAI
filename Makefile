@@ -10,7 +10,7 @@ OBJS = $(SRCS:.asm=.o)
 
 OUTPUT = ./a.out
 
-.PHONY all
+.PHONY: all
 all: $(OUTPUT)
 	$(OUTPUT)
 
@@ -21,6 +21,11 @@ $(OUTPUT): $(OBJS)
 	$(ASSEMBLER) $(ASM_FLAGS) $< -o $@
 	@echo "Compiling $<"
 
-.PHONY clean
+.PHONY: clean
 clean:
 	rm *.o *.out
+
+install-tools: #installs all tools used in running the program
+	sudo apt-get install ld
+	sudo apt-get update -y
+	sudo apt-get install -y nasm
