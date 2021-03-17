@@ -1,6 +1,10 @@
 
 ; Different mathematical functions used in the AI.
 
+RECIP_LOG2E equ 0x3fe62e42feffbb3c ; approx. 0.69314, or 1/log_2(e)
+ONE_OVER_MANTISSA_LENGTH equ 0x3cb0000000000000 ;approx. 1/2^52, where 52 is the size of the mantissa in the double format
+LOG_SHIFT_FACTOR equ 0x408FF8582319E07C ;shifting constant for logarithm approximation
+
 section .text
 
     ; Returns a random integer that can occupy up to 30 bits using a linear congruential generator.
@@ -36,5 +40,39 @@ section .text
         pop rax
         pop rcx
         pop rdx
+        pop rbp
+    ret 1*8
+
+    ; Computes an array of four pseudo-random doubles between 0 and 1 using a LCG,
+    ; and updates the seeds in memory.
+    ;
+    ; param seeds: an offset pointing at four dwords to be used as seeds.
+    GetRandomDouble:
+        push rbp
+        mov rbp, rsp
+        push rax
+        AVXPUSH ymm0
+        push rcx
+        push rbx
+
+        mov rbx, [rbp+8*2] ;seed offsets
+        mov rcx, 4 ;loop counter
+
+    GetRandomDouble_main_loop: ;updating seeds in mem
+        push rax
+        call GetRandomInteger
+        pop rax ;rax contains a new random integer
+        mov [rbx], rax ;inserting a new random to mem
+        add rbx, 4
+        loop GetRandomDouble_main_loop
+
+        sub rbx, 4*3 ;resetting rbx to original offset
+        vcvtdq2pd ymm0, [rbx] ;converting integer array to double array
+        vrcp14pd ymm0, ymm0 ;highly-temporary solution that uses AVX512 for a fast approximation of a recipocal.
+
+        pop rbx
+        pop rcx
+        AVXPOP ymm0
+        pop rax
         pop rbp
     ret 1*8
