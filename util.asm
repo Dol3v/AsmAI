@@ -46,36 +46,25 @@ section .text
     ; Pushes an AVX register into the stack.
     ;
     ; param: the AVX register
-    ; param: a 64-bit helper register to use
-    %macro AVXPUSH 2
-        vmovq %2, %1
-        push %2
-        vpermpd %1, %1, MOVE_SECOND_TO_FIRST
-        vmovq %2, %1
-        push %2
-        vpermpd %1, %1, MOVE_SECOND_TO_FIRST
-        vmovq %2, %1
-        push %2
-        vpermpd %1, %1, MOVE_SECOND_TO_FIRST
-        vmovq %2, %1
-        push %2
-        vpermpd %1, %1, MOVE_SECOND_TO_FIRST
+    %macro AVXPUSH 1
+        vmovupd [rsp], %1
+        sub rsp, 0x100
     %endmacro 
 
     ; Pops an AVX register from the stack.
     ;
     ; param: the AVX register
-    ; param: a helper 64-bit register to use
-    %macro AVXPOP 2
-        pop %2
-        vmovq %1, %2
-        vpermpd %1, %1, MOVE_FIRST_TO_LAST
-        pop %2
-        vmovq %1, %2
-        vpermpd %1, %1, MOVE_FIRST_TO_THIRD
-        pop %2
-        vmovq %1, %2
-        vpermpd %1, %1, MOVE_FIRST_TO_SECOND
-        pop %2
-        vmovq %1, %2
+    %macro AVXPOP 1
+        vmovupd %1, [rsp]
+        add rsp, 0x100
+    %endmacro
+
+    ; Broadcasts a 64 bit register to a ymm register.
+    ;
+    ; param: avx register
+    ; param: 64-bit register
+    ; param: some xmm register
+    %macro BROADCASTREG 3
+        vmovq %3, %1
+        vbroadcastsd %2, %3
     %endmacro
