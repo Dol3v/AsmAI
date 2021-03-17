@@ -10,6 +10,7 @@ OBJS = $(SRCS:.asm=.o)
 
 OUTPUT = ./a.out
 
+.PHONY all
 all: $(OUTPUT)
 	$(OUTPUT)
 
@@ -20,5 +21,6 @@ $(OUTPUT): $(OBJS)
 	$(ASSEMBLER) $(ASM_FLAGS) $< -o $@
 	@echo "Compiling $<"
 
+.PHONY clean
 clean:
 	rm *.o *.out
