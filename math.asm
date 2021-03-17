@@ -1,6 +1,8 @@
 
 ; Different mathematical functions used in the AI.
 
+%include "util.asm"
+
 RECIP_LOG2E equ 0x3fe62e42feffbb3c ; approx. 0.69314, or 1/log_2(e)
 ONE_OVER_MANTISSA_LENGTH equ 0x3cb0000000000000 ;approx. 1/2^52, where 52 is the size of the mantissa in the double format
 LOG_SHIFT_FACTOR equ 0x408FF8582319E07C ;shifting constant for logarithm approximation
@@ -50,7 +52,6 @@ section .text
     GetRandomDouble:
         push rbp
         mov rbp, rsp
-        push rax
         AVXPUSH ymm0
         push rcx
         push rbx
