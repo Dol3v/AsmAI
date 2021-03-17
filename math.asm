@@ -84,6 +84,8 @@ section .text
     ;
     ; log2(x) = Ix/L - (bias - log_approx_factor)
     ;
+    ; Altho it currently doesn't work. TODO: fix :(
+    ;
     ; param: input, AVX register
     ; param: a helper xmm register
     ; param: a helper AVX register
