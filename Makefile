@@ -1,6 +1,6 @@
 # general tools and flags used
 ASSEMBLER = nasm
-ASM_FLAGS = -felf64
+ASM_FLAGS = -f elf64 -F dwarf -g
 LINKER = ld
 
 #source and object files
