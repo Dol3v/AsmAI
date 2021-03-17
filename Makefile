@@ -1,13 +1,31 @@
 # general tools and flags used
 ASSEMBLER = nasm
-ASM_FLAGS = -felf64
+ASM_FLAGS = -f elf64 -F dwarf -g
 LINKER = ld
 
-all: a.out
-	./a.out
-	
-main.o: main.asm
-	$(ASSEMBLER) $(ASM_FLAGS) $< -o $@
+#source and object files
+SRCS = main.asm util.asm math.asm
 
-a.out: main.o
-	$(LINKER) $<
+OBJS = $(SRCS:.asm=.o)
+
+OUTPUT = ./a.out
+
+.PHONY: all
+all: $(OUTPUT)
+	$(OUTPUT)
+
+$(OUTPUT): $(OBJS)
+	$(LINKER) $(OBJS)
+
+%.o: %.asm
+	$(ASSEMBLER) $(ASM_FLAGS) $< -o $@
+	@echo "Compiling $<"
+
+.PHONY: clean
+clean:
+	rm *.o *.out
+
+install-tools: #installs all tools used in running the program
+	sudo apt-get install ld
+	sudo apt-get update -y
+	sudo apt-get install -y nasm
