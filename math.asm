@@ -78,7 +78,7 @@ section .text
         pop rbp
     ret 1*8
 
- ; Definitely the most awesome log macro that exists. 
+    ; Definitely the most awesome log macro that exists. 
     ;
     ; Calculates log_2(x) using floating point bit magic. More specifically,
     ;
