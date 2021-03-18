@@ -55,10 +55,17 @@ section .text
     AVX2_compatible:
         mov rbx, [rbp + 8*3] ;compatibility message offset
         PRINT rbx
-
     PrintAVX2Compatible_finish:
         pop rax
         pop rbx
         pop rbp
-    ret
-    
+    ret 2*2
+
+    ; Prints AVX2 compatibility with pre-defined messages.
+    ;
+    ; exits: if host computer isn't AVX2 compatible
+    %macro USER_AVX2_COMPATIBLE 0
+        push AVX2Enabled
+        push AVX2NotEnabled
+        call PrintAVX2Compatible
+    %endmacro
