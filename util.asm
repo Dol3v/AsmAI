@@ -40,3 +40,29 @@ section .text
         xor       rdi, rdi                
         syscall
     %endmacro
+
+    ; Pushes an AVX register into the stack.
+    ;
+    ; param: the AVX register
+    %macro AVXPUSH 1
+        vmovupd [rsp], %1
+        sub rsp, 0x100
+    %endmacro 
+
+    ; Pops an AVX register from the stack.
+    ;
+    ; param: the AVX register
+    %macro AVXPOP 1
+        vmovupd %1, [rsp]
+        add rsp, 0x100
+    %endmacro
+
+    ; Broadcasts a 64 bit register to a ymm register.
+    ;
+    ; param: avx register
+    ; param: 64-bit register
+    ; param: some xmm register
+    %macro BROADCASTREG 3
+        vmovq %3, %2
+        vbroadcastsd %1, %3
+    %endmacro
