@@ -58,13 +58,13 @@ section .text
         mov rbx, [rbp+8*2] ;seed offsets
         mov rcx, 4 ;loop counter
 
-    GetRandomDouble_main_loop: ;updating seeds in mem
+    .main_loop: ;updating seeds in mem
         push rax
         call GetRandomInteger
         pop rax ;rax contains a new random integer
         mov [rbx], rax ;inserting a new random to mem
         add rbx, 4
-        loop GetRandomDouble_main_loop
+        loop .main_loop
 
         sub rbx, 4*3 ;resetting rbx to original offset
         vcvtdq2pd ymm0, [rbx] ;converting integer array to double array
