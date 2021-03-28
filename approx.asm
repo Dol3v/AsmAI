@@ -5,11 +5,11 @@
 
 ; General floating point format constants
 MANTISSA_LEN equ 53
-BIAS_F equ 0x408ff80000000000 
-BIAS_F_DEC equ 0x408ff00000000000
+BIAS_F equ 0x408ff80000000000 ;1023
+BIAS_F_DEC equ 0x408ff00000000000 ;1022
 
 
-; Taylor coefficents for 2^x - x
+; Taylor coefficents for 2^x - x. See documentation for POW2.
 POW2_ZERO_TAYLOR equ 0x3ff0000000000000
 POW2_FIRST_TAYLOR equ 0xbfd3a37a020b8c22
 POW2_SECOND_TAYLOR equ 0x3fcebfbdff82c58e
