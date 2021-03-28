@@ -3,10 +3,6 @@
 
 %include "util.asm"
 
-RECIP_LOG2E equ 0x3fe62e42feffbb3c ; approx. 0.69314, or 1/log_2(e)
-ONE_OVER_MANTISSA_LENGTH equ 0x3cb0000000000000 ;approx. 1/2^52, where 52 is the size of the mantissa in the double format
-LOG_SHIFT_FACTOR equ 0x408FF8582319E07C ;shifting constant for logarithm approximation
-
 section .text
 
     ; Returns a random integer that can occupy up to 30 bits using a linear congruential generator.
@@ -77,46 +73,6 @@ section .text
         pop rax
         pop rbp
     ret 1*8
-
-    ; Definitely the most awesome log macro that exists. 
-    ;
-    ; Calculates log_2(x) using floating point bit magic. More specifically,
-    ;
-    ; log2(x) = Ix/L - (bias - log_approx_factor)
-    ;
-    ; Altho it currently doesn't work. TODO: fix :(
-    ;
-    ; param: input, AVX register
-    ; param: a helper xmm register
-    ; param: a helper AVX register
-    ; returns input: returns log_2(input)
-    %macro LOG2 3
-        push rax
-        mov rax, ONE_OVER_MANTISSA_LENGTH ;scaling factor
-        vmovq %2, rax
-        vbroadcastsd %3, %2
-        vpmuludq %1, %1, %3
-
-        mov rax, LOG_SHIFT_FACTOR ;scaling factor
-        vmovq %2, rax
-        vbroadcastsd %3, %2
-        vpaddq %1, %1, %3 
-        pop rax
-    %endmacro
-
-    ; Definitely the most awesome natural log macro that exists.
-    ;
-    ; param: input, an AVX register
-    ; param: a helper xmm register
-    ; param: a helper AVX register
-    %macro LN 3
-        LOG2 %1, %2, %3
-        push rax
-        mov rax, RECIP_LOG2E
-        BROADCASTREG %3, rax, %2
-        pop rax
-        vmulpd %1, %1, %3
-    %endmacro
 
     ; A macro for calculating dot product between two ymm registers.
     ; *Note: result is in the low 64 bits of the destination.
