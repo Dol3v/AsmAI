@@ -16,6 +16,9 @@ POW2_SECOND_TAYLOR equ 0x3fcebfbdff82c58e
 POW2_THIRD_TAYLOR equ 0x3fac6b08d704a0be
 POW2_FOURTH_TAYLOR equ 0x3f83b2ab6fba4e76
 
+; Special constants
+LOG2E equ 0x3ff71547652b953a ;used for conversion between 2^x and e^x
+
 section .text
 
     ; Helper for POW2 macro: approximates 2^x - x using Taylor series evaluation.
@@ -53,7 +56,7 @@ section .text
 
     ; Calculates 2^x.
     ;
-    ; param %1: input
+    ; param %1: input/output
     ; param %2: AVX helper
     ; param %3: xmm helper (disjoint from used AVX regs)
     ; param %4: AVX other helper
@@ -78,5 +81,21 @@ section .text
         _TAYLOR_HELPER_POW2 %5, %2, %3, %4
         vaddpd %1, %1, %5 ;%1 = x + B - 1 + f(x - floor(x)) = 1 + B - 1 + f({x})
         vpslldq %1, %1, MANTISSA_LEN ; %1 = 2**L * (x + B - 1 + f({x}))
+        pop rax
+    %endmacro
+
+    ; Calculates e^x.
+    ;
+    ; param %1: input/output
+    ; param %2: AVX helper
+    ; param %3: xmm helper (disjoint from used AVX regs)
+    ; param %4: AVX other helper
+    ; param %5: AVX other helper
+    %macro EXP 5
+        push rax
+        mov rax, LOG2E
+        BROADCASTREG %2, rax, %3
+        vmulpd %1, %1, %2 ;input is x*log2(e)
+        POW2 %1, %2, %3, %4, %5 ;output is 2^(x*log2(e)) = e^x
         pop rax
     %endmacro
