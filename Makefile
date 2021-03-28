@@ -29,3 +29,5 @@ install-tools: #installs all tools used in running the program
 	sudo apt-get install ld
 	sudo apt-get update -y
 	sudo apt-get install -y nasm
+	sudo apt-get install -y nasm
+  
