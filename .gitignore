@@ -1,3 +1,4 @@
 *.o
 *.out
 /AVX_C_Testing
+.idea
