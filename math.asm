@@ -94,7 +94,7 @@ section .text
     ; Calculates the fractional part of a vector.
     ;
     ; param %1: the input/output AVX register
-    ; param %2L a helper AVX register
+    ; param %2: a helper AVX register
     %macro FRACTIONAL 2
         vroundpd %2, %1, TRANCTUATE_NORMAL
         vsubpd %1, %1, %2
