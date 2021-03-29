@@ -53,7 +53,7 @@ section .text
     ;
     ; param: the AVX register
     %macro AVXPOP 1
-        vmovupd %1, [rsp]
+        vmovupd [rsp], %1
         add rsp, 0x100
     %endmacro
 
