@@ -63,3 +63,37 @@ section .text
         AVXPOP5
         pop rbp
     ret 2*8
+
+    ; Calculates the ReLu function on an array of doubles in memory.
+    ;
+    ; Note: the length of the array must be divisible by 4
+    ;
+    ; see RELU macro
+    ; param 1 start address: the start address of the array
+    ; param 2 end address: the end address of the array
+    ReLu:
+        push rbp
+        mov rbp, rsp
+        AVXPUSH ymm0
+        AVXPUSH ymm1
+        push rbx
+        push rsi
+
+        mov rbx, [rbp+8*3] ;start address
+        mov rsi, [rbp+8*2] ;end address
+
+    .main_loop:
+        vmovupd ymm0, [rbx]
+        RELU ymm0, ymm1
+        vmovupd [rbx], ymm0
+
+        add rbx, 4*64
+        cmp rbx, rsi
+        jne .main_loop
+
+        pop rsi
+        pop rbx
+        AVXPOP ymm1
+        AVXPOP ymm0
+        pop rbp
+    ret 2*8
