@@ -1,4 +1,3 @@
-%include "compatibility.asm"
 %include "activation.asm"
 
 global    _start
