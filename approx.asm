@@ -28,7 +28,7 @@ section .text
     vmulpd %5, %1, %1 ;%5 contains frequently used constants
     mov rax, TEN_F
     BROADCASTREG %4, rax, %2 ;%4 helper register
-    vdivpd %3, %5, %4 ;TODO: check for correctness, x^2/10 in result
+    vdivpd %3, %5, %4 ;%3 temp. stores result, currently x^2/10
 
     mov rax, SIX_F
     BROADCASTREG %4, rax, %2 ;%4 = 6
