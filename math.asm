@@ -6,6 +6,9 @@
 ; Immediates for AVX operations
 TRANCTUATE_NORMAL equ 0011b ; For vroundpd: trancuate, don't use control word settings
 
+; General constants 
+SIGN_BIT_SET equ 0x8000000000000000
+
 section .text
 
     ; Returns a random integer that can occupy up to 30 bits using a linear congruential generator.
@@ -98,4 +101,17 @@ section .text
     %macro FRACTIONAL 2
         vroundpd %2, %1, TRANCTUATE_NORMAL
         vsubpd %1, %1, %2
+    %endmacro
+
+    ; Negates a number, i.e, multiplies it by -1.
+    ;
+    ; param %1: input/output
+    ; param %2: helper xmm register, not disjoint from %3
+    ; param %3: helper AVX register
+    %macro NEGATE 3
+        push rax
+        mov rax, SIGN_BIT_SET
+        BROADCASTREG %3, rax, %2
+        vxorpd %1, %1, %3
+        pop rax
     %endmacro
