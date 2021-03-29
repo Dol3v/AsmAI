@@ -3,6 +3,9 @@
 
 %include "util.asm"
 
+; Immediates for AVX operations
+TRANCTUATE_NORMAL equ 0011b ; For vroundpd: trancuate, don't use control word settings
+
 section .text
 
     ; Returns a random integer that can occupy up to 30 bits using a linear congruential generator.
@@ -55,13 +58,13 @@ section .text
         mov rbx, [rbp+8*2] ;seed offsets
         mov rcx, 4 ;loop counter
 
-    GetRandomDouble_main_loop: ;updating seeds in mem
+    .main_loop: ;updating seeds in mem
         push rax
         call GetRandomInteger
         pop rax ;rax contains a new random integer
         mov [rbx], rax ;inserting a new random to mem
         add rbx, 4
-        loop GetRandomDouble_main_loop
+        loop .main_loop
 
         sub rbx, 4*3 ;resetting rbx to original offset
         vcvtdq2pd ymm0, [rbx] ;converting integer array to double array
@@ -86,4 +89,13 @@ section .text
         vhaddpd %1, %1, %1 ;dest = [x1*y1+x2*y2, x1*y1+x2*y2, x3*y3+x4*y4, x3*y3+x4*y4]
         vextractf128 %5, %1, 1b ;temp = [x3*y3+x4*y4, same]
         vaddpd %4, %4, %5 ;dest = [x3*y3+x4*y4+x1*y1, same, garbage]
+    %endmacro
+
+    ; Calculates the fractional part of a vector.
+    ;
+    ; param %1: the input/output AVX register
+    ; param %2: a helper AVX register
+    %macro FRACTIONAL 2
+        vroundpd %2, %1, TRANCTUATE_NORMAL
+        vsubpd %1, %1, %2
     %endmacro
