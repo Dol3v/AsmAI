@@ -57,6 +57,24 @@ section .text
         add rsp, 0x100
     %endmacro
 
+    ; Pushes the registers ymm0 - ymm5 onto the stack.
+    %macro AVXPUSH5 0
+        AVXPUSH ymm0
+        AVXPUSH ymm1
+        AVXPUSH ymm2
+        AVXPUSH ymm3
+        AVXPUSH ymm4
+    %endmacro
+
+    ; Pops the registers ymm0 - ymm5 from the stack.
+    %macro AVXPUSH5 0
+        AVXPOP ymm4
+        AVXPOP ymm3
+        AVXPOP ymm2
+        AVXPOP ymm1
+        AVXPOP ymm0
+    %endmacro
+
     ; Broadcasts a 64 bit register to a ymm register.
     ;
     ; param: avx register
