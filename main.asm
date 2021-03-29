@@ -1,5 +1,4 @@
 %include "compatibility.asm"
-%include "util.asm"
 %include "approx.asm"
 
 global    _start
