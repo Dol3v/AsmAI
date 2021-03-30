@@ -54,13 +54,14 @@ section .text
         SIGMOID ymm0, xmm1, ymm2, ymm3, ymm4
         vmovupd [rbx], ymm0
 
-        add rbx, 4*64
+        add rbx, YMM_BYTE_LENGTH
         cmp rbx, rsi
         jne .main_loop
 
         pop rsi
         pop rbx
-        AVXPOP5
+
+        AVXPOP5 
         pop rbp
     ret 2*8
 
