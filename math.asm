@@ -49,8 +49,10 @@ section .text
 
     ; Computes an array of four pseudo-random doubles between 0 and 1 using a LCG,
     ; and updates the seeds in memory.
-    ;
+    ; 
+    ; param empty: a redundant AVX push
     ; param seeds: an offset pointing at four dwords to be used as seeds.
+    ; returns an array of pseudo-random numbers
     GetRandomDouble:
         push rbp
         mov rbp, rsp
@@ -72,6 +74,7 @@ section .text
         sub rbx, 4*3 ;resetting rbx to original offset
         vcvtdq2pd ymm0, [rbx] ;converting integer array to double array
         vrcp14pd ymm0, ymm0 ;highly-temporary solution that uses AVX512 for a fast approximation of a recipocal.
+        vmovupd [rbp+8*2 + YMM_BYTE_LENGTH] ;outputting ymm register to stack
 
         pop rbx
         pop rcx
