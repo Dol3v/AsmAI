@@ -4,6 +4,8 @@
 STDOUT_HNDL equ 1
 CARRAGE_RETURN equ 13
 
+YMM_BYTE_LENGTH equ 32
+
 section .text
 
     ; Prints a new-line-terminated string to the screen.
@@ -45,8 +47,8 @@ section .text
     ;
     ; param: the AVX register
     %macro AVXPUSH 1
+        sub rsp, YMM_BYTE_LENGTH
         vmovupd [rsp], %1
-        sub rsp, 0x100
     %endmacro 
 
     ; Pops an AVX register from the stack.
@@ -54,7 +56,7 @@ section .text
     ; param: the AVX register
     %macro AVXPOP 1
         vmovupd %1, [rsp]
-        add rsp, 0x100
+        add rsp, YMM_BYTE_LENGTH
     %endmacro
 
     ; Pushes the registers ymm0 - ymm5 onto the stack.
@@ -67,7 +69,7 @@ section .text
     %endmacro
 
     ; Pops the registers ymm0 - ymm5 from the stack.
-    %macro AVXPUSH5 0
+    %macro AVXPOP5 0
         AVXPOP ymm4
         AVXPOP ymm3
         AVXPOP ymm2
