@@ -41,9 +41,9 @@ section .text
 
         mov [rbp+8*2], rdx ;outputting to stack
 
-        pop rax
-        pop rcx
         pop rdx
+        pop rcx
+        pop rax
         pop rbp
     ret 1*8
 
@@ -74,7 +74,7 @@ section .text
         sub rbx, 4*3 ;resetting rbx to original offset
         vcvtdq2pd ymm0, [rbx] ;converting integer array to double array
         vrcp14pd ymm0, ymm0 ;highly-temporary solution that uses AVX512 for a fast approximation of a recipocal.
-        vmovupd [rbp+8*2 + YMM_BYTE_LENGTH] ;outputting ymm register to stack
+        vmovupd [rbp+8*2 + YMM_BYTE_LENGTH], ymm0 ;outputting ymm register to stack
 
         pop rbx
         pop rcx
