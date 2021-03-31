@@ -77,6 +77,29 @@ section .text
         AVXPOP ymm0
     %endmacro
 
+    ; Pushes several frequently used registers.
+    %macro PUSHREGS 0
+        push rbp
+        mov rbp, rsp
+        push rax
+        push rbx
+        push rcx
+        push rdx
+        push rdi
+        push rsi
+    %endmacro
+
+    ; Pops several frequently used registers.
+    %macro POPREGS 0
+        pop rsi
+        pop rdi
+        pop rdx
+        pop rcx
+        pop rbx
+        pop rax
+        pop rbp
+    %endmacro
+
     ; Broadcasts a 64 bit register to a ymm register.
     ;
     ; param: avx register
