@@ -3,6 +3,9 @@
 
 %include "math.asm"
 
+; used constants
+DOUBLE_BYTE_LENGTH equ 8
+
 section .text
 
     ; Fills a hidden layer with random numbers.
@@ -41,3 +44,58 @@ section .text
         pop rbx
         pop rbp
     ret 3*8
+
+    ; Forward propagates a layer.
+    ;
+    ; Note: all lengths must be divisible by 4
+    ; 
+    ; param 1 start addrs: the starting address of the layer
+    ; param 2 input size: the size of the input vector
+    ; param 3 output size: the size of the output vector
+    ; param 4 output start addrs: the start of the output vector
+    ForwardPropagate:
+        PUSHREGS
+        AVXPUSH5
+
+        mov rbx, [rbp+8*2] ;output start
+        mov rax, [rbp+8*3] ;output size
+        mov rcx, [rbp+8*4] ;input size
+        mov rdi, [rbp+8*5] ;input address
+
+        push rax
+        mul rcx
+        xor rdx, rdx
+        mov rsi, rax ;rsi = input*output size
+        pop rax 
+
+        mov rdx, rdi
+        add rdx, rcx ;rdx is the weights address
+        mov rcx, rdx ;input size isn't used anymore, so rcx saves initial weights address
+
+        add rsi, rdx ;rsi is the biases address
+
+    .main_loop:
+        push rdi
+        .dot_product: ;calculate the dot product of the input vector and weights vector
+            vmovupd ymm1, [rdi] ;input subvector
+            vmovupd ymm2, [rdx] ;weight subvector
+            VDOTPROD ymm3, ymm1, ymm2, xmm3, xmm4
+            vaddps ymm0, ymm0, ymm3 ;accumelate dot product in ymm0
+
+            add rdi, YMM_BYTE_LENGTH
+            add rdx, YMM_BYTE_LENGTH
+            cmp rdi, rcx ;have we covered all input vectors?
+            jne .dot_product
+
+        pop rdi ;restore input offset
+        vaddps ymm0, ymm0, [rsi] ;add bias
+        vmovups [rbx], ymm0 ;outputting
+
+        add rsi, DOUBLE_BYTE_LENGTH
+        add rbx, DOUBLE_BYTE_LENGTH
+        cmp rsi, [rbp+8*3] ;have we covered all biases?
+        jne .main_loop
+        
+        AVXPOP5
+        POPREGS
+    ret
