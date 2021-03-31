@@ -79,7 +79,7 @@ section .text
         .dot_product: ;calculate the dot product of the input vector and weights vector
             vmovupd ymm1, [rdi] ;input subvector
             vmovupd ymm2, [rdx] ;weight subvector
-            VDOTPROD ymm3, ymm1, ymm2, xmm3, xmm4
+            DOTPROD ymm3, ymm1, ymm2, xmm3, xmm4
             vaddps ymm0, ymm0, ymm3 ;accumelate dot product in ymm0
 
             add rdi, YMM_BYTE_LENGTH
@@ -95,7 +95,7 @@ section .text
         add rbx, DOUBLE_BYTE_LENGTH
         cmp rsi, [rbp+8*3] ;have we covered all biases?
         jne .main_loop
-        
+
         AVXPOP5
         POPREGS
     ret
