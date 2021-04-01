@@ -1,8 +1,8 @@
 
 ; Useful macros for the rest of the code
 
-section .text
-
+%ifndef UTILS
+    %define UTILS 
     STDOUT_HNDL equ 1 ;handle for standard output
     END_CHAR equ "$" ;end char for printing
 
@@ -110,3 +110,4 @@ section .text
         vmovq %3, %2
         vbroadcastsd %1, %3
     %endmacro
+%endif
