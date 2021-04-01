@@ -1,15 +1,16 @@
 
 ; Useful macros for the rest of the code
 
-STDOUT_HNDL equ 1
-CARRAGE_RETURN equ 13
-
-YMM_BYTE_LENGTH equ 32
-
 section .text
 
-    ; Prints a new-line-terminated string to the screen.
-    ; *String mustn't be empty - it shouldn't be equal to 13.
+    STDOUT_HNDL equ 1 ;handle for standard output
+    END_CHAR equ "$" ;end char for printing
+
+    YMM_BYTE_LENGTH equ 32
+
+    ; Prints a string to the screen.
+    ;
+    ; Note: the string should terminate at END_CHAR.
     ;
     ; param: the message's offset
     %macro PRINT 1
@@ -27,7 +28,7 @@ section .text
         syscall
 
         inc rsi
-        cmp byte [rsi], CARRAGE_RETURN
+        cmp byte [rsi], END_CHAR
         jne %%print_char
 
         pop rdx
