@@ -5,9 +5,9 @@
 %include "activation.asm"
 
 
-INPUT_SIZE equ 4
-FIRST_HIDDEN_LAYER_SIZE equ 8
-SECOND_HIDDEN_LAYER_SIZE equ 4
+INPUT_SIZE equ 1
+FIRST_HIDDEN_LAYER_SIZE equ 2
+SECOND_HIDDEN_LAYER_SIZE equ 1
 OUTPUT_SIZE equ 2
 
 section .data
@@ -23,7 +23,8 @@ section .data
 
     nn_inputs_3 times SECOND_HIDDEN_LAYER_SIZE*4*YMM_BYTE_LENGTH dq 0 ;output layer inputs
     nn_weights_3 times SECOND_HIDDEN_LAYER_SIZE*4*YMM_BYTE_LENGTH*2 dq 0 ;weights
-    nn_biases_3 times OUTPUT_SIZE*YMM_BYTE_LENGTH dq 0 ;outputs, without activation
+    nn_biases_3 times OUTPUT_SIZE*YMM_BYTE_LENGTH dq 0 ;biases
+    nn_zs_3 times OUTPUT_SIZE*YMM_BYTE_LENGTH dq 0 ;outputs, without activation
     nn_output times OUTPUT_SIZE*YMM_BYTE_LENGTH dq 0 ;neural net output
 
 section .text
