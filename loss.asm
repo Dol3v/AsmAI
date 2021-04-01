@@ -61,7 +61,7 @@ section .text
         vmovupd xmm1, [rsi] ;ymm1 contains target
 
         MSE ymm0, ymm1, ymm0, xmm0, xmm2 ;calculate MSE
-        vmovq rbx, ymm0 
+        vmovq rbx, xmm0 
         mov [rbp+8*4], rbx ;outputting to stack
 
         AVXPOP ymm2
