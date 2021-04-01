@@ -28,7 +28,7 @@ section .text
     ; param %3: helper AVX register
     ; param %4: helper xmm register (not disjoint from helper)
     ; returns: MSE derivative in %1
-    %macro MSE_DER 3
+    %macro MSE_DER 4
         push rax
         mov rax, TWO_F
         BROADCASTREG %3, rax, %2
