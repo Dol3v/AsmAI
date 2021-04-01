@@ -64,7 +64,6 @@ section .text
 
         pop rsi
         pop rbx
-
         AVXPOP5 
         pop rbp
     ret 2*8
