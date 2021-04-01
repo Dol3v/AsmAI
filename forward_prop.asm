@@ -80,7 +80,7 @@ section .text
             vmovupd ymm1, [rdi] ;input subvector
             vmovupd ymm2, [rdx] ;weight subvector
             DOTPROD ymm3, ymm1, ymm2, xmm3, xmm4
-            vaddps ymm0, ymm0, ymm3 ;accumelate dot product in ymm0
+            vaddps ymm0, ymm0, ymm3 ;accumulate dot product in ymm0
 
             add rdi, YMM_BYTE_LENGTH
             add rdx, YMM_BYTE_LENGTH
