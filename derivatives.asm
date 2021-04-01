@@ -14,14 +14,12 @@ section .text
     ; param 4: other helper AVX
     ; param 5: other helper AVX
     %macro SIGMOID_DER 5
-        EXP %1, %2, %3, %4, %5 ;%1 = e^x
+        SIGMOID %1, %2, %3, %4, %5
         push rax
-        mov rax, ONE_F 
-        BROADCASTREG %3, rax, %2 ;%3 = 1 
+        mov rax, ONE_F
+        BROADCASTREG %3, rax, %2 ;%3 = 1
         pop rax
-        vaddpd %3, %3, %1 ;%3 = 1 + e^x
-
-        vmulpd %3, %3, %3 ;%3 = (1 + e^x)^2
-        vdivpd %1, %1, %3 ;%1 = e^x/(1 + e^x)^2
+        vsubpd %3, %3, %1 ;%3 = 1 - sigmoid(x)
+        vmulpd %1, %1, %3 ;%1 = sigmoid(x)(1-sigmoid(x)) = sigmoid'(x)
     %endmacro
     
