@@ -3,6 +3,8 @@
 
 %include "math.asm"
 
+TWO_F equ 0x4000000000000000
+
 section .text
 
     ; Calculates the mean squared loss:
@@ -17,6 +19,22 @@ section .text
     %macro MSE 5
         vsubpd %1,  %1, %2
         DOTPROD %3, %1, %1, %4, %5
+    %endmacro
+
+    ; Calculates the derivative of MSE.
+    ;
+    ; param %1: predicted output
+    ; param %2: target output
+    ; param %3: helper AVX register
+    ; param %4: helper xmm register (not disjoint from helper)
+    ; returns: MSE derivative in %1
+    %macro MSE_DER 3
+        push rax
+        mov rax, TWO_F
+        BROADCASTREG %3, rax, %2
+        pop rax
+        vsubpd %1, %1, %2 ;%1 = (output - target)
+        vmulpd %1, %1, %3 ;%1 = 2*(output - target)
     %endmacro
 
     ; Calculates MSE for a binary-classification nueral net.
