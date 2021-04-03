@@ -97,7 +97,7 @@ section .text
     ; param 3: input size
     ; param 4: output size
     ; param 5: previous layer's input size
-    BackwardsPropagate:
+    BackwardsPropagateLayer:
         PUSHREGS
         AVXPUSH5
         AVXPUSH ymm5
@@ -113,6 +113,21 @@ section .text
         vpxor ymm4, ymm4, ymm4 ;accumulator for biases
 
         xor rdi, rdi ;loop counter
+        mov rsi, rcx
+
+        push rax
+        push rbx
+        push rdx
+        inc rax
+        inc rbx
+        mul rbx
+
+        mov rbx, YMM_BYTE_LENGTH
+        mul rbx
+        add rsi, rax ;calculate zs derivative offset
+        pop rdx
+        pop rbx
+        pop rax
         .calc_dot_products: ;calculate sum of zs
             vmovupd ymm0, [rsi + YMM_BYTE_LENGTH*rdi] ;move zs derivative
             DOTPROD ymm0, ymm2, ymm1, xmm0, xmm3 ;sum all zs up
@@ -124,7 +139,16 @@ section .text
         vmovq r8, xmm4 
         BROADCASTREG ymm4, r8, xmm4 ;broadcast bias derivative
         xor rdi, rdi
-        ;update rsi to point at biases
+        push rax
+        push rdx
+        push rbx
+        mov rbx, YMM_BYTE_LENGTH
+        mul rbx
+        sub rsi, rax ;update rsi to point at biases
+        pop rbx
+        pop rdx
+        pop rax
+
         .save_biases_ders: ;save biases' derivatives to memory
             vmovupd [rsi + YMM_BYTE_LENGTH*rdi], ymm4
             add rdi, 4
@@ -132,6 +156,14 @@ section .text
             jne .save_biases_ders
         
         ; update rsi to point at weights
+        push rax
+        push rbx
+        push rdx
+        mul rbx
+        sub rsi, rax
+        pop rdx
+        pop rbx
+        pop rax
         xor r8, r8 ;counts over outputs
         .save_activation_der:
             vpxor ymm2, ymm2
@@ -148,13 +180,39 @@ section .text
             add r8, DOUBLE_BYTE_LENGTH
             cmp r8, rbx
             jne .save_activation_der
+        
+        ; update rdx to point at neural zs
+        push rax
+        push rbx
+        push rdx
+        inc rax
+        inc rbx
+        mul rbx
 
-        ; update rsi to point at neural zs
-        ; update rdx to point at activation derivative
-        ; update r8 to point at zs derivative
+        mov rbx, YMM_BYTE_LENGTH
+        mul rbx
+        add rdx, rax ;calculate zs offset
+        pop rdx
+        pop rbx
+        pop rax
+
+        mov r8, rsi ;update r8 to point at zs derivative
+        push rax
+        push rbx
+        push rdx
+
+        mul rbx
+        add r8, rax
+        pop rdx
+        pop rbx
+        pop rax
+
+        ; update rsi to point at activation derivative
+        sub rsi, rbx
+
         .save_zs_der:
-            vmovupd ymm5, [rdx + YMM_BYTE_LENGTH*rdi] ;get activation derivatives
-            vmovupd ymm0, [rsi +YMM_BYTE_LENGTH*rdi] ;get zs
+            vmovupd ymm5, [rsi + YMM_BYTE_LENGTH*rdi] ;get activation derivatives
+            vmovupd ymm0, [rdx +YMM_BYTE_LENGTH*rdi] ;get zs
             SIGMOID_DER ymm0, xmm1, ymm2, ymm3, ymm4 ;calculate derivatives
             vmulpd ymm0, ymm0, ymm5 ;get zs derivative
             vmovupd [r8 + YMM_BYTE_LENGTH*rdi], ymm0 ;save in memory
@@ -164,8 +222,18 @@ section .text
             jne .save_zs_der
         
         ; update rdx to point at activations
+        sub rdx, rbx
         ; update rsi to point at weight der
-        ; update r8 to point at zs der
+        push rax
+        push rbx
+        push rdx
+
+        mul rbx
+        add rsi, rax
+        pop rax
+        pop rbx
+        pop rdx
+        
         xor rcx, rcx ;loop counter for rows
         mov rax, [rbp+8*2] ;previous layer's input size
         .calc_weight_der:
