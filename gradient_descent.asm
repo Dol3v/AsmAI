@@ -5,6 +5,8 @@
 %include "derivatives.asm"
 %include "loss.asm"
 
+DOUBLE_BYTE_LENGTH equ 8
+
 section .data
 
 ; Stores derivatives of cost function
@@ -85,3 +87,104 @@ section .text
         AVXPOP5
         POPREGS
     ret 3*8
+
+    ; Back-propagates a layer.
+    ;
+    ; TODO: optimize loops: combine weight loop and bias loop to one loop
+    ;
+    ; param 1: actual layer offset
+    ; param 2: derivative layer offset
+    ; param 3: input size
+    ; param 4: output size
+    ; param 5: previous layer's input size
+    BackwardsPropagate:
+        PUSHREGS
+        AVXPUSH5
+        AVXPUSH ymm5
+        push r8
+
+        mov rax, [rbp+8*3] ;output size
+        mov rbx, [rbp+8*4] ;input size
+        mov rcx, [rbp+8*5] ;derivatives
+        mov rdx, [rbp+8*6] ;layer offset
+
+        mov rdi, ONE_F
+        BROADCASTREG ymm2, rdi, xmm2 ;1s register
+        vpxor ymm4, ymm4, ymm4 ;accumulator for biases
+
+        xor rdi, rdi ;loop counter
+        .calc_dot_products: ;calculate sum of zs
+            vmovupd ymm0, [rsi + YMM_BYTE_LENGTH*rdi] ;move zs derivative
+            DOTPROD ymm0, ymm2, ymm1, xmm0, xmm3 ;sum all zs up
+            vaddps ymm4, ymm4, ymm0 ;accumulate biases
+            add rdi, 4
+            cmp rdi, rax ;have we covered all zs?
+            jne .calc_dot_products
+            
+        vmovq r8, xmm4 
+        BROADCASTREG ymm4, r8, xmm4 ;broadcast bias derivative
+        xor rdi, rdi
+        ;update rsi to point at biases
+        .save_biases_ders: ;save biases' derivatives to memory
+            vmovupd [rsi + YMM_BYTE_LENGTH*rdi], ymm4
+            add rdi, 4
+            cmp rdi, rax
+            jne .save_biases_ders
+        
+        ; update rsi to point at weights
+        xor r8, r8 ;counts over outputs
+        .save_activation_der:
+            vpxor ymm2, ymm2
+            xor rdi, rdi ;loop counter for dot prod
+            .loop_over_rows: ;loops over all weights matching a specific output nodes
+                vmovupd ymm0, [rsi + YMM_BYTE_LENGTH*rdi + YMM_BYTE_LENGTH*rax*r8] ;extract weights
+                DOTPROD ymm0, ymm4, ymm1, xmm0, xmm3 ;dotting with bias derivative
+                vaddps ymm2, ymm2, ymm0 ;accumulate in ymm2
+                add rdi, 4
+                cmp rdi, rax
+                jne .loop_over_rows
+
+            vmovups [rcx+r8], ymm2 ;outputting to mem
+            add r8, DOUBLE_BYTE_LENGTH
+            cmp r8, rbx
+            jne .save_activation_der
+
+        ; update rsi to point at neural zs
+        ; update rdx to point at activation derivative
+        ; update r8 to point at zs derivative
+        .save_zs_der:
+            vmovupd ymm5, [rdx + YMM_BYTE_LENGTH*rdi] ;get activation derivatives
+            vmovupd ymm0, [rsi +YMM_BYTE_LENGTH*rdi] ;get zs
+            SIGMOID_DER ymm0, xmm1, ymm2, ymm3, ymm4 ;calculate derivatives
+            vmulpd ymm0, ymm0, ymm5 ;get zs derivative
+            vmovupd [r8 + YMM_BYTE_LENGTH*rdi], ymm0 ;save in memory
+
+            add rdi, 4
+            cmp rdi, rax 
+            jne .save_zs_der
+        
+        ; update rdx to point at activations
+        ; update rsi to point at weight der
+        ; update r8 to point at zs der
+        xor rcx, rcx ;loop counter for rows
+        mov rax, [rbp+8*2] ;previous layer's input size
+        .calc_weight_der:
+            xor rdi, rdi ;loop counter for within a row
+            .loop_in_row:
+                vmovupd ymm0, [r8 + rdi*YMM_BYTE_LENGTH] ;load z derivatives
+                vmovupd ymm1, [rdx + rcx*YMM_BYTE_LENGTH] ;load activations
+                vmulpd ymm0, ymm0, ymm1 ;weight derivative
+                vmovupd [rsi + rcx*rax*YMM_BYTE_LENGTH + rdi*YMM_BYTE_LENGTH], ymm0 ;load der to memory
+                
+                add rdi, 4
+                cmp rdi, rax
+                jne .loop_in_row
+            add rcx, 4
+            cmp rcx, rbx
+            jne .calc_weight_der
+
+        pop r8
+        AVXPOP ymm5
+        AVXPOP5
+        POPREGS
+    ret 5*8
