@@ -1,7 +1,7 @@
 
 ; Contains procedures for handeling the data set
 
-OPEN_FILE_SYSCALL equ 2
+OPENAT_FILE_SYSCALL equ 0x101
 OPEN_READ_ONLY_FLAG equ 0x00
 
 CLOSE_FILE_SYSCALL equ 3
@@ -16,20 +16,23 @@ section .text
 
 ; Opens a file with read only perms and default mode.
 ;
-; param: register containing offset to path, 
+; param: register containing relative offset to path
 ; output: file descriptor in rax
 %macro OPEN_READ_ONLY_FILE 1
     push rdi
     push rsi
     push rdx
+    push r10
 
-    mov rax, OPEN_FILE_SYSCALL
+    mov rax, OPENAT_FILE_SYSCALL
     mov rdi, %1
-    mov rsi, OPEN_READ_ONLY_FLAG
-    xor rdx, rdx
+    mov rsi, %1
+    mov rdx, OPEN_READ_ONLY_FILE
+    xor r10, r10
     syscall
     mov %1, rax
 
+    pop r10
     pop rdx
     pop rsi
     pop rdi
@@ -78,3 +81,5 @@ section .text
     pop rdi
     pop rax
 %endmacro
+
+
