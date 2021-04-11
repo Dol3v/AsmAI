@@ -129,7 +129,7 @@ section .text
         pop rbx
         pop rax
         .calc_dot_products: ;calculate sum of zs
-            vmovupd ymm0, [rsi + YMM_BYTE_LENGTH*rdi] ;move zs derivative
+            ; vmovupd ymm0, [rsi + YMM_BYTE_LENGTH*rdi] ;move zs derivative
             DOTPROD ymm0, ymm2, ymm1, xmm0, xmm3 ;sum all zs up
             vaddps ymm4, ymm4, ymm0 ;accumulate biases
             add rdi, 4
@@ -150,7 +150,7 @@ section .text
         pop rax
 
         .save_biases_ders: ;save biases' derivatives to memory
-            vmovupd [rsi + YMM_BYTE_LENGTH*rdi], ymm4
+            ; vmovupd [rsi + YMM_BYTE_LENGTH*rdi], ymm4
             add rdi, 4
             cmp rdi, rax
             jne .save_biases_ders
@@ -169,7 +169,7 @@ section .text
             vpxor ymm2, ymm2
             xor rdi, rdi ;loop counter for dot prod
             .loop_over_rows: ;loops over all weights matching a specific output nodes
-                vmovupd ymm0, [rsi + YMM_BYTE_LENGTH*rdi + YMM_BYTE_LENGTH*rax*r8] ;extract weights
+                ; vmovupd ymm0, [rsi + YMM_BYTE_LENGTH*rdi + YMM_BYTE_LENGTH*rax*r8] ;extract weights
                 DOTPROD ymm0, ymm4, ymm1, xmm0, xmm3 ;dotting with bias derivative
                 vaddps ymm2, ymm2, ymm0 ;accumulate in ymm2
                 add rdi, 4
@@ -211,11 +211,11 @@ section .text
         sub rsi, rbx
 
         .save_zs_der:
-            vmovupd ymm5, [rsi + YMM_BYTE_LENGTH*rdi] ;get activation derivatives
-            vmovupd ymm0, [rdx +YMM_BYTE_LENGTH*rdi] ;get zs
+            ; vmovupd ymm5, [rsi + YMM_BYTE_LENGTH*rdi] ;get activation derivatives
+            ; vmovupd ymm0, [rdx +YMM_BYTE_LENGTH*rdi] ;get zs
             SIGMOID_DER ymm0, xmm1, ymm2, ymm3, ymm4 ;calculate derivatives
             vmulpd ymm0, ymm0, ymm5 ;get zs derivative
-            vmovupd [r8 + YMM_BYTE_LENGTH*rdi], ymm0 ;save in memory
+            ; vmovupd [r8 + YMM_BYTE_LENGTH*rdi], ymm0 ;save in memory
 
             add rdi, 4
             cmp rdi, rax 
@@ -239,10 +239,10 @@ section .text
         .calc_weight_der:
             xor rdi, rdi ;loop counter for within a row
             .loop_in_row:
-                vmovupd ymm0, [r8 + rdi*YMM_BYTE_LENGTH] ;load z derivatives
-                vmovupd ymm1, [rdx + rcx*YMM_BYTE_LENGTH] ;load activations
+                ; vmovupd ymm0, [r8 + rdi*YMM_BYTE_LENGTH] ;load z derivatives
+                ; vmovupd ymm1, [rdx + rcx*YMM_BYTE_LENGTH] ;load activations
                 vmulpd ymm0, ymm0, ymm1 ;weight derivative
-                vmovupd [rsi + rcx*rax*YMM_BYTE_LENGTH + rdi*YMM_BYTE_LENGTH], ymm0 ;load der to memory
+                ; vmovupd [rsi + rcx*rax*YMM_BYTE_LENGTH + rdi*YMM_BYTE_LENGTH], ymm0 ;load der to memory
                 
                 add rdi, 4
                 cmp rdi, rax

@@ -35,7 +35,6 @@ section .text
     ;
     ; param 1: input_size offset
     ; param 2: neural_net offset
-    ; see: BINARY_NEURAL_NET macro
     ForwardPropagateNetwork:
         PUSHREGS
 

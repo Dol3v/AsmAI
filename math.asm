@@ -47,7 +47,7 @@ section .text
             pop rcx
             pop rax
             pop rbp
-        ret 1*8
+        ret 
 
         ; Computes an array of four pseudo-random doubles between 0 and 1 using a LCG,
         ; and updates the seeds in memory.
@@ -61,23 +61,28 @@ section .text
             AVXPUSH ymm0
             push rcx
             push rbx
+            push rax
 
-            mov rbx, [rbp+8*2] ;seed offsets
-            mov rcx, 4 ;loop counter
+            mov rbx, [rbp + 8*2] ;seed offsets
+            xor rcx, rcx ;loop counter
 
         .main_loop: ;updating seeds in mem
+            mov rax, [rbx + 8*rcx]
             push rax
             call GetRandomInteger
             pop rax ;rax contains a new random integer
             mov [rbx], rax ;inserting a new random to mem
             add rbx, 4
-            loop .main_loop
+            add rcx, 4
+            cmp rcx, 16
+            jne .main_loop
 
             sub rbx, 4*3 ;resetting rbx to original offset
             vcvtdq2pd ymm0, [rbx] ;converting integer array to double array
             vrcp14pd ymm0, ymm0 ;highly-temporary solution that uses AVX512 for a fast approximation of a recipocal.
-            vmovupd [rbp+8*2 + YMM_BYTE_LENGTH], ymm0 ;outputting ymm register to stack
+            vmovupd [rbp + 8*3 + YMM_BYTE_LENGTH], ymm0 ;outputting ymm register to stack
 
+            pop rax
             pop rbx
             pop rcx
             AVXPOP ymm0
