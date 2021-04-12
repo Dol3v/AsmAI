@@ -112,18 +112,5 @@ section .text
             vroundpd %2, %1, TRANCTUATE_NORMAL
             vsubpd %1, %1, %2
         %endmacro
-
-        ; Negates a number, i.e, multiplies it by -1.
-        ;
-        ; param %1: input/output
-        ; param %2: helper xmm register, not disjoint from %3
-        ; param %3: helper AVX register
-        %macro NEGATE 3
-            push rax
-            mov rax, SIGN_BIT_SET
-            BROADCASTREG %3, rax, %2
-            vxorpd %1, %1, %3
-            pop rax
-        %endmacro
     %endif
     
