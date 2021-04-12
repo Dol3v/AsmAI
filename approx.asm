@@ -5,10 +5,14 @@
 %include "util.asm"
 
 ; Constants for continued fraction of e^x
-ONE_F equ 0x3ff0000000000000
+%ifndef ONE_F
+    ONE_F equ 0x3ff0000000000000
+%endif
 TWO_F equ 0x4000000000000000
 SIX_F equ 0x4018000000000000
-TEN_F equ 0x4024000000000000
+%ifndef TEN_F
+    TEN_F equ 0x4024000000000000
+%endif
 
 section .text
 
