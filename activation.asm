@@ -20,7 +20,11 @@ section .text
     ;
     ; Sigmoid(x) = 1/(e^(-x) + 1)
     ;
-    ; 
+    ; param 1: x, input/output
+    ; param 2: helper xmm
+    ; param 3: helper AVX
+    ; param 4: other helper AVX
+    ; param 5: other helper AVX
     %macro SIGMOID 5
         NEGATE %1, %2, %3
         EXP %1, %2, %3, %4, %5 ;%1 = e^-x
@@ -60,7 +64,6 @@ section .text
 
         pop rsi
         pop rbx
-
         AVXPOP5 
         pop rbp
     ret 2*8

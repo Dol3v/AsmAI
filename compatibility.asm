@@ -59,7 +59,7 @@ section .text
         pop rax
         pop rbx
         pop rbp
-    ret 2*2
+    ret 8*2
 
     ; Prints AVX2 compatibility with pre-defined messages.
     ;
