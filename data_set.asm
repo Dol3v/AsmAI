@@ -1,6 +1,8 @@
 
 ; Contains procedures for handeling the data set
 
+%include "util.asm"
+
 OPENAT_FILE_SYSCALL equ 0x101
 OPEN_READ_ONLY_FLAG equ 0x00
 
@@ -114,3 +116,41 @@ section .text
         pop rsi
         pop rax
     %endmacro
+
+    ; Reads a line.
+    ;
+    ; param: file descriptor
+    ; param: buffer offset
+    ; param: currentInput offset's
+    ; param: temporary buffer offset, 16 bytes long
+    ReadEntry:
+        PUSHREGS
+
+        mov rdx, [rbp + 8*2] ;buffer offset
+        mov rax, [rbp + 8*3] ;currentInput
+        mov rbx, [rbp + 8*4] ;buffer offset
+        mov rcx, [rbp + 8*5] ;fd
+        xor rdi, rdi
+        mov rdi, [rax] ;input offset
+        xor rsi, rsi ;loop counter
+
+    .loop_over_number:
+        inc rdi
+
+        .find_offsets: ;find offsets of word
+            cmp [rdi + rsi], ","
+            je .end_offset_found
+            cmp [rdi + rsi], "/n"
+            je .end_offset_found
+            
+            inc rsi
+            jmp .find_offsets
+
+        .end_offset_found:
+            REPOSITION_OFFSET rcx, 1
+            dec rsi ;number of bytes till the end
+            READ_FILE rcx, rdx, rsi ;read file and store in buffer
+        
+
+        POPREGS
+    ret 8*4

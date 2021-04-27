@@ -7,6 +7,7 @@
     END_CHAR equ "$" ;end char for printing
 
     YMM_BYTE_LENGTH equ 32
+    DOUBLE_BYTE_LENGTH equ 8
     ZERO_ASCII_VAL equ 48
 
     ONE_F equ 0x3ff0000000000000

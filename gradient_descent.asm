@@ -59,7 +59,7 @@ section .text
         vpxor ymm1, ymm1, ymm1
         vmovupd xmm1, [rax] ;ymm1 contains expected
 
-        MSE_DER ymm0, ymm1, ymm2, xmm2 ;calculate loss derivative
+        ; MSE_DER ymm0, ymm1, ymm2, xmm2 ;calculate loss derivative
         vmovupd [rsi], ymm0 ;output to memory
         SIGMOID_DER ymm0, xmm1, ymm2, ymm3, ymm4
 
@@ -88,171 +88,154 @@ section .text
         POPREGS
     ret 3*8
 
-    ; Back-propagates a layer.
+    ; Calculates the derivatives of the biases, given that the derivatives of the previous 
+    ; layers have been calculated.
     ;
-    ; TODO: optimize loops: combine weight loop and bias loop to one loop
+    ; param bias_der_offset: the offset of the bias derivatives
+    ; param der_zs_offset: the zs derivative offset of the previous layer
+    ; param output_size: the output size of the layer (bytes)
+    ; param input_size: the input size of the layer (bytes)
+    CalcDerBiases:
+        PUSHREGS
+        AVXPUSH ymm0
+        AVXPUSH ymm1
+        AVXPUSH ymm2
+        AVXPUSH ymm3
+
+        mov rax, ONE_F
+        BROADCASTREG ymm1, rax, xmm1
+        vpxor ymm2, ymm2, ymm2 ;accumulator for zs der
+        vpxor ymm3, ymm3, ymm3 ;helper for dot product
+
+        mov rax, [rbp+8*2] ;input size
+        mov rbx, [rbp+8*3] ;output size
+        mov rcx, [rbp+8*4] ;zs derivative offset
+        mov rdx, [rbp+8*5] ;bias derivatives offset
+        xor rsi, rsi ;loop counter
+
+
+        .calc_sum_zs_der:
+            vmovupd ymm0, [rcx + rsi] ;get zs der
+            DOTPROD ymm0, ymm0, ymm1, xmm0, xmm3
+            vaddsd xmm2, xmm2, xmm0 ;accumulate
+            add rsi, YMM_BYTE_LENGTH
+            cmp rsi, rbx
+            jne .calc_sum_zs_der
+
+        xor rsi, rsi ;loop counter
+        .move_to_biases_der:
+            vmovsd [rdx + rsi], xmm2
+            add rsi, DOUBLE_BYTE_LENGTH
+            cmp rsi, rax
+            jne .move_to_biases_der
+
+        AVXPOP ymm3
+        AVXPOP ymm2
+        AVXPOP ymm1
+        AVXPOP ymm0
+        POPREGS
+    ret 4*8 
+
+    ; Calculates the derivative of the cost function wrt the activation function.
     ;
-    ; param 1: actual layer offset
-    ; param 2: derivative layer offset
-    ; param 3: input size
-    ; param 4: output size
-    ; param 5: previous layer's input size
-    BackwardsPropagateLayer:
+    ; param activation_der_offset
+    ; param zs_der_offset
+    ; param weights: the offset of the weights of the layer
+    ; param input_size (bytes)
+    ; param output_size (bytes)
+    CalcDerActivation:
+        PUSHREGS
+        AVXPUSH5
+
+        mov rax, ONE_F
+        BROADCASTREG ymm1, rax, xmm1 ;ones
+        vpxor ymm2, ymm2, ymm2 ;accumulator
+        vpxor ymm3, ymm3, ymm3 ;helper for dot prod
+
+        mov rax, [rbp+8*2] ;output size
+        mov rbx, [rbp+8*3] ;input size
+        mov rcx, [rbp+8*4] ;weights offset
+        mov rdx, [rbp+8*5] ;zs der
+        mov rsi, [rbp+8*6] ;activation der
+        xor rdi, rdi ;loop counter
+
+        .calc_sum_zs_der:
+            vmovupd ymm0, [rcx + rdi] ;get zs der
+            DOTPROD ymm0, ymm0, ymm1, xmm0, xmm3
+            vaddsd xmm2, xmm2, xmm0 ;accumulate
+            add rdi, YMM_BYTE_LENGTH
+            cmp rdi, rax
+            jne .calc_sum_zs_der
+
+        vmovq rdi, xmm2
+        BROADCASTREG ymm2, rdi, xmm2 ;broadcast zs der to all entries of ymm2
+        xor rdi, rdi ;loop counter 2
+
+        .calc_activation_der:
+            ; vmovupd ymm0, []
+        POPREGS
+        AVXPOP5
+    ret 5*8
+    
+    ; Calculates the derivative of the zs assuming the derivatives wrt
+    ; the activation function have been calculated.
+    ;
+    ; param zs_der
+    ; param activation_der
+    ; param zs: the zs of the layer (offset)
+    ; param input_size (bytes)
+    CalcZsDer:
         PUSHREGS
         AVXPUSH5
         AVXPUSH ymm5
-        push r8
 
-        mov rax, [rbp+8*3] ;output size
-        mov rbx, [rbp+8*4] ;input size
-        mov rcx, [rbp+8*5] ;derivatives
-        mov rdx, [rbp+8*6] ;layer offset
+        mov rax, [rbp+8*2] ;input size
+        mov rbx, [rbp+8*3] ;zs
+        mov rcx, [rbp+8*4] ;activation der
+        mov rdx, [rbp+8*5] ;zs der
+        xor rsi, rsi ;loop counter
 
-        mov rdi, ONE_F
-        BROADCASTREG ymm2, rdi, xmm2 ;1s register
-        vpxor ymm4, ymm4, ymm4 ;accumulator for biases
+        .calc_zs_der:
+            vmovupd [rcx+rsi], ymm0 ;activation ders
+            vmovupd [rbx+rsi], ymm1 ;zs
+            SIGMOID_DER ymm1, xmm2, ymm3, ymm4, ymm5 ;derivative of sigmoid wrt zs
+            vmulpd ymm0, ymm1, ymm0 ;zs der
+            vmovupd [rdx+rsi], ymm0 ;outputting
 
-        xor rdi, rdi ;loop counter
-        mov rsi, rcx
+            add rsi, YMM_BYTE_LENGTH
+            cmp rsi, rax 
+            jne .calc_zs_der
 
-        push rax
-        push rbx
-        push rdx
-        inc rax
-        inc rbx
-        mul rbx
-
-        mov rbx, YMM_BYTE_LENGTH
-        mul rbx
-        add rsi, rax ;calculate zs derivative offset
-        pop rdx
-        pop rbx
-        pop rax
-        .calc_dot_products: ;calculate sum of zs
-            ; vmovupd ymm0, [rsi + YMM_BYTE_LENGTH*rdi] ;move zs derivative
-            DOTPROD ymm0, ymm2, ymm1, xmm0, xmm3 ;sum all zs up
-            vaddps ymm4, ymm4, ymm0 ;accumulate biases
-            add rdi, 4
-            cmp rdi, rax ;have we covered all zs?
-            jne .calc_dot_products
-            
-        vmovq r8, xmm4 
-        BROADCASTREG ymm4, r8, xmm4 ;broadcast bias derivative
-        xor rdi, rdi
-        push rax
-        push rdx
-        push rbx
-        mov rbx, YMM_BYTE_LENGTH
-        mul rbx
-        sub rsi, rax ;update rsi to point at biases
-        pop rbx
-        pop rdx
-        pop rax
-
-        .save_biases_ders: ;save biases' derivatives to memory
-            ; vmovupd [rsi + YMM_BYTE_LENGTH*rdi], ymm4
-            add rdi, 4
-            cmp rdi, rax
-            jne .save_biases_ders
-        
-        ; update rsi to point at weights
-        push rax
-        push rbx
-        push rdx
-        mul rbx
-        sub rsi, rax
-        pop rdx
-        pop rbx
-        pop rax
-        xor r8, r8 ;counts over outputs
-        .save_activation_der:
-            vpxor ymm2, ymm2
-            xor rdi, rdi ;loop counter for dot prod
-            .loop_over_rows: ;loops over all weights matching a specific output nodes
-                ; vmovupd ymm0, [rsi + YMM_BYTE_LENGTH*rdi + YMM_BYTE_LENGTH*rax*r8] ;extract weights
-                DOTPROD ymm0, ymm4, ymm1, xmm0, xmm3 ;dotting with bias derivative
-                vaddps ymm2, ymm2, ymm0 ;accumulate in ymm2
-                add rdi, 4
-                cmp rdi, rax
-                jne .loop_over_rows
-
-            vmovups [rcx+r8], ymm2 ;outputting to mem
-            add r8, DOUBLE_BYTE_LENGTH
-            cmp r8, rbx
-            jne .save_activation_der
-        
-        ; update rdx to point at neural zs
-        push rax
-        push rbx
-        push rdx
-        inc rax
-        inc rbx
-        mul rbx
-
-        mov rbx, YMM_BYTE_LENGTH
-        mul rbx
-        add rdx, rax ;calculate zs offset
-        pop rdx
-        pop rbx
-        pop rax
-
-        mov r8, rsi ;update r8 to point at zs derivative
-        push rax
-        push rbx
-        push rdx
-
-        mul rbx
-        add r8, rax
-        pop rdx
-        pop rbx
-        pop rax
-
-        ; update rsi to point at activation derivative
-        sub rsi, rbx
-
-        .save_zs_der:
-            ; vmovupd ymm5, [rsi + YMM_BYTE_LENGTH*rdi] ;get activation derivatives
-            ; vmovupd ymm0, [rdx +YMM_BYTE_LENGTH*rdi] ;get zs
-            SIGMOID_DER ymm0, xmm1, ymm2, ymm3, ymm4 ;calculate derivatives
-            vmulpd ymm0, ymm0, ymm5 ;get zs derivative
-            ; vmovupd [r8 + YMM_BYTE_LENGTH*rdi], ymm0 ;save in memory
-
-            add rdi, 4
-            cmp rdi, rax 
-            jne .save_zs_der
-        
-        ; update rdx to point at activations
-        sub rdx, rbx
-        ; update rsi to point at weight der
-        push rax
-        push rbx
-        push rdx
-
-        mul rbx
-        add rsi, rax
-        pop rax
-        pop rbx
-        pop rdx
-        
-        xor rcx, rcx ;loop counter for rows
-        mov rax, [rbp+8*2] ;previous layer's input size
-        .calc_weight_der:
-            xor rdi, rdi ;loop counter for within a row
-            .loop_in_row:
-                ; vmovupd ymm0, [r8 + rdi*YMM_BYTE_LENGTH] ;load z derivatives
-                ; vmovupd ymm1, [rdx + rcx*YMM_BYTE_LENGTH] ;load activations
-                vmulpd ymm0, ymm0, ymm1 ;weight derivative
-                ; vmovupd [rsi + rcx*rax*YMM_BYTE_LENGTH + rdi*YMM_BYTE_LENGTH], ymm0 ;load der to memory
-                
-                add rdi, 4
-                cmp rdi, rax
-                jne .loop_in_row
-            add rcx, 4
-            cmp rcx, rbx
-            jne .calc_weight_der
-
-        pop r8
         AVXPOP ymm5
         AVXPOP5
         POPREGS
-    ret 5*8
+    ret 4*8
+
+    ; Calculates the derivative of the cost function wrt the weights.
+    ;
+    ; param weight_der
+    ; param zs_der
+    ; param activations
+    ; param output size (bytes)
+    ; param prev layer input size (not bytes)
+    CalcWeightDer:
+
+    ret 4*8
+
+    ; Backpropagates a layer.
+    ;
+    ; param input offset 
+    ; param output offset
+    ; param input size (not bytes)
+    ; param output size (not bytes)
+    ; param prev layer input size (not bytes)
+    BackpropLayer:
+        PUSHREGS
+        
+        mov rax, [rbp+8*2] ;prev input size
+        mov rbx, [rbp+8*3] ;output size
+        mov rcx, [rbp+8*4] ;input size
+        mov rdx, [rbp+8*5] ;output offset
+        mov rdi, [rbp+8*6] ;input offset
+        POPREGS
+    ret 4*8

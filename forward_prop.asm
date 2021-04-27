@@ -48,18 +48,18 @@ section .text
     ; Forward propagates a layer.
     ;
     ; Note: all lengths must be divisible by 4
-    ; 
+    ;
     ; param 1 start addrs: the starting address of the layer
-    ; param 2 input size: the size of the input vector
-    ; param 3 output size: the size of the output vector
+    ; param 2 input size: the size of the input vector (in bytes)
+    ; param 3 output size: the size of the output vector 
     ; param 4 output start addrs: the start of the output vector
     ForwardPropagate:
         PUSHREGS
         AVXPUSH5
 
         mov rbx, [rbp+8*2] ;output start
-        mov rax, [rbp+8*3] ;output size
-        mov rcx, [rbp+8*4] ;input size
+        mov rax, [rbp+8*3] ;output size 
+        mov rcx, [rbp+8*4] ;input size (bytes)
         mov rdi, [rbp+8*5] ;input address
 
         push rax
@@ -80,7 +80,7 @@ section .text
             vmovupd ymm1, [rdi] ;input subvector
             vmovupd ymm2, [rdx] ;weight subvector
             DOTPROD ymm3, ymm1, ymm2, xmm3, xmm4
-            vaddps ymm0, ymm0, ymm3 ;accumulate dot product in ymm0
+            vaddsd xmm0, xmm0, xmm3 ;accumulate dot product in ymm0
 
             add rdi, YMM_BYTE_LENGTH
             add rdx, YMM_BYTE_LENGTH
@@ -88,8 +88,8 @@ section .text
             jne .dot_product
 
         pop rdi ;restore input offset
-        vaddps ymm0, ymm0, [rsi] ;add bias
-        vmovups [rbx], ymm0 ;outputting
+        vaddsd xmm0, xmm0, [rsi] ;add bias
+        vmovsd [rbx], xmm0 ;outputting
 
         add rsi, DOUBLE_BYTE_LENGTH
         add rbx, DOUBLE_BYTE_LENGTH
