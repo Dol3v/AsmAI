@@ -1,7 +1,7 @@
 
 ; Derivatives of different activation functions
 
-%include "approx.asm"
+%include "math.asm"
 
 section .text
 
@@ -14,7 +14,7 @@ section .text
     ; param 4: other helper AVX
     ; param 5: other helper AVX
     %macro SIGMOID_DER 5
-        SIGMOID %1, %2, %3, %4, %5
+        SIGMOID %1, %2, %3, %4
         push rax
         mov rax, ONE_F
         BROADCASTREG %3, rax, %2 ;%3 = 1

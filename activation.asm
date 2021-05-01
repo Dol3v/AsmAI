@@ -1,7 +1,7 @@
 
 ; Contains all of the used activation functions
 
-%include "approx.asm"
+%include "math.asm"
 
 section .text
 
@@ -24,10 +24,9 @@ section .text
     ; param 2: helper xmm
     ; param 3: helper AVX
     ; param 4: other helper AVX
-    ; param 5: other helper AVX
-    %macro SIGMOID 5
+    %macro SIGMOID 4
         NEGATE %1, %2, %3
-        EXP %1, %2, %3, %4, %5 ;%1 = e^-x
+        EXP %1, %3, %2, %4 ;%1 = e^-x
         push rax
         mov rax, ONE_F
         BROADCASTREG %3, rax, %2 ;%3 = 1
@@ -55,7 +54,7 @@ section .text
 
     .main_loop:
         vmovupd ymm0, [rbx]
-        SIGMOID ymm0, xmm1, ymm2, ymm3, ymm4
+        SIGMOID ymm0, xmm1, ymm2, ymm3
         vmovupd [rbx], ymm0
 
         add rbx, YMM_BYTE_LENGTH
