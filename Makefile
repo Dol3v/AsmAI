@@ -4,7 +4,7 @@ ASM_FLAGS = -f elf64 -F dwarf -g
 LINKER = ld
 
 #source and object files
-SRCS = main.asm util.asm math.asm approx.asm compatibility.asm activation.asm forward_prop.asm loss.asm derivatives.asm gradient_descent.asm
+SRCS = main.asm util.asm math.asm compatibility.asm activation.asm forward_prop.asm loss.asm derivatives.asm gradient_descent.asm
 
 OBJS = $(SRCS:.asm=.o)
 

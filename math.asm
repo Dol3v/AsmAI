@@ -9,6 +9,12 @@ TRANCTUATE_NORMAL equ 0011b ; For vroundpd: trancuate, don't use control word se
 ; General constants 
 SIGN_BIT_SET equ 0x8000000000000000
 
+; Taylor coeeficents of e^x
+ONE_F equ 0x3ff0000000000000
+HALF_F equ 0x3fe0000000000000
+FOURTH_COEFF equ 0x3fc5555555555555
+FIFTH_COEFF  equ 0x3fa5555555555555
+
 section .text
 
     %ifndef MATH
@@ -89,6 +95,36 @@ section .text
             pop rax
             pop rbp
         ret 1*8
+
+        ; Calculates 2^x when x is an integer in double format.
+        ;
+        ; param 1: some ymm register to be used as i/o.
+        ; param 2: helper ymm
+        ; param 3: some xmm, not disjoint from 2
+        ; param 4: helper ymm
+        %macro EXP 4
+            vmovupd %4, %1 ;save copy of %1
+
+            push rax
+            mov rax, FIFTH_COEFF
+            BROADCASTREG %1, rax, %3 ;x*1/5!
+
+            mov rax, FOURTH_COEFF
+            BROADCASTREG %2, rax, %3
+            vaddpd %1, %1, %2 
+            vmulpd %1, %1, %4 
+
+            mov rax, HALF_F
+            BROADCASTREG %2, rax, %3
+            vaddpd %1, %1, %2
+            vmulpd %1, %1, %4
+
+            mov rax, ONE_F
+            BROADCASTREG %2, rax, %3
+            vaddpd %1, %1, %4
+            vaddpd %1, %1, %2
+            pop rax
+        %endmacro
 
         ; A macro for calculating dot product between two ymm registers.
         ; *Note: result is in the low 64 bits of the destination.
