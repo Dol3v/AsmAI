@@ -3,6 +3,8 @@
 
 %include "math.asm"
 
+%ifndef FORWARD_PROP
+%define FORWARD_PROP
 ; used constants
 DOUBLE_BYTE_LENGTH equ 8
 
@@ -56,11 +58,13 @@ section .text
     ForwardPropagate:
         PUSHREGS
         AVXPUSH5
+        push r8
 
         mov rbx, [rbp+8*2] ;output start
         mov rax, [rbp+8*3] ;output size 
         mov rcx, [rbp+8*4] ;input size (bytes)
         mov rdi, [rbp+8*5] ;input address
+        mov r8, rbx ;copy of thr output addrs
 
         push rax
         mul rcx
@@ -93,9 +97,12 @@ section .text
 
         add rsi, DOUBLE_BYTE_LENGTH
         add rbx, DOUBLE_BYTE_LENGTH
-        cmp rsi, [rbp+8*3] ;have we covered all biases?
+        cmp rsi, r8 ;have we covered all biases?
         jne .main_loop
 
+        pop r8
         AVXPOP5
         POPREGS
-    ret
+    ret 4*8
+
+%endif
