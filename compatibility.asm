@@ -4,8 +4,8 @@
 %include "util.asm"
 
 section .data
-    AVX2Enabled db "Your computer has AVX2 enabled, proceeding to run the program...", 10
-    AVX2NotEnabled db "Your computer doesn't have AVX2 enabled, exiting the program...", 10
+    AVX2Enabled db "Your computer has AVX2 enabled, proceeding to run the program...", 13, 10, "$"
+    AVX2NotEnabled db "Your computer doesn't have AVX2 enabled, exiting the program...", 13, 10,"$"
 
 section .text
 
@@ -43,6 +43,7 @@ section .text
         push rbx
         push rax
 
+        push rax
         call IsAVX2Compatible
         pop rax
         shr rax, 1
