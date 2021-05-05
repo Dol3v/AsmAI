@@ -49,7 +49,7 @@ section .text
 
     ; Forward propagates a layer.
     ;
-    ; Note: all lengths must be divisible by 4
+    ; Note: number of inputs must be divisible by 4
     ;
     ; param 1 start addrs: the starting address of the layer
     ; param 2 input size: the size of the input vector (in bytes)
