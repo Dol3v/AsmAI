@@ -7,38 +7,6 @@
 
 DOUBLE_BYTE_LENGTH equ 8
 
-section .data
-
-; Stores derivatives of cost function
-der_nn_weights_1 times INPUT_SIZE*4*YMM_BYTE_LENGTH*FIRST_HIDDEN_LAYER_SIZE*4 dq 0 ;weights
-der_nn_biases_1 times FIRST_HIDDEN_LAYER_SIZE*4*YMM_BYTE_LENGTH dq 0 ;biases
-der_nn_zs_1 times FIRST_HIDDEN_LAYER_SIZE*4*YMM_BYTE_LENGTH dq 0 ;outputs, without activation
-
-der_nn_inputs_2 times FIRST_HIDDEN_LAYER_SIZE*4*YMM_BYTE_LENGTH dq 0 ;first hidden layer inputs
-der_nn_weights_2 times FIRST_HIDDEN_LAYER_SIZE*4*YMM_BYTE_LENGTH*SECOND_HIDDEN_LAYER_SIZE*4 dq 0 ;weights
-der_nn_biases_2 times SECOND_HIDDEN_LAYER_SIZE*4*YMM_BYTE_LENGTH dq 0 ;biases
-der_nn_zs_2 times SECOND_HIDDEN_LAYER_SIZE*4*YMM_BYTE_LENGTH dq 0 ;outputs, without activation
-
-der_nn_inputs_3 times SECOND_HIDDEN_LAYER_SIZE*4*YMM_BYTE_LENGTH dq 0 ;output layer inputs
-der_nn_weights_3 times SECOND_HIDDEN_LAYER_SIZE*4*YMM_BYTE_LENGTH*2 dq 0 ;weights
-der_nn_zs_3 times OUTPUT_SIZE*YMM_BYTE_LENGTH dq 0 ;outputs, without activation
-der_padding times 2*YMM_BYTE_LENGTH dq 0 ;padding
-
-; Stores averages of derivatives of cost function
-avg_nn_weights_1 times INPUT_SIZE*4*YMM_BYTE_LENGTH*FIRST_HIDDEN_LAYER_SIZE*4 dq 0 ;weights
-avg_nn_biases_1 times FIRST_HIDDEN_LAYER_SIZE*4*YMM_BYTE_LENGTH dq 0 ;biases
-avg_nn_zs_1 times FIRST_HIDDEN_LAYER_SIZE*4*YMM_BYTE_LENGTH dq 0 ;outputs, without activation
-
-avg_nn_inputs_2 times FIRST_HIDDEN_LAYER_SIZE*4*YMM_BYTE_LENGTH dq 0 ;first hidden layer inputs
-avg_nn_weights_2 times FIRST_HIDDEN_LAYER_SIZE*4*YMM_BYTE_LENGTH*SECOND_HIDDEN_LAYER_SIZE*4 dq 0 ;weights
-avg_nn_biases_2 times SECOND_HIDDEN_LAYER_SIZE*4*YMM_BYTE_LENGTH dq 0 ;biases
-avg_nn_zs_2 times SECOND_HIDDEN_LAYER_SIZE*4*YMM_BYTE_LENGTH dq 0 ;outputs, without activation
-
-avg_nn_inputs_3 times SECOND_HIDDEN_LAYER_SIZE*4*YMM_BYTE_LENGTH dq 0 ;output layer inputs
-avg_nn_weights_3 times SECOND_HIDDEN_LAYER_SIZE*4*YMM_BYTE_LENGTH*2 dq 0 ;weights
-avg_nn_biases_3 times OUTPUT_SIZE*YMM_BYTE_LENGTH dq 0 ;outputs, without activation
-avg_nn_output times OUTPUT_SIZE*YMM_BYTE_LENGTH dq 0 ;neural net output
-
 section .text
 
     ; Calculates the initial derivatives of the weights and biases in the last 
@@ -67,9 +35,9 @@ section .text
         vmovupd [rsi], ymm0 ;saving in memory
 
         mov rbx, rsi ;copy of rsi
-        sub rsi, SECOND_HIDDEN_LAYER_SIZE*4*YMM_BYTE_LENGTH*2 ;weights address
+        sub rsi, SECOND_HIDDEN_LAYER_SIZE*YMM_BYTE_LENGTH*OUTPUT_SIZE ;weights address
         mov rdi, rsi ;copy of weights address 
-        sub rsi, SECOND_HIDDEN_LAYER_SIZE*4*YMM_BYTE_LENGTH ;activation length
+        sub rsi, SECOND_HIDDEN_LAYER_SIZE*YMM_BYTE_LENGTH ;activation length
 
         vmovq rcx, xmm0 ;first output node's derivative
         vpextrq rdx, xmm0, 1b ;extract upper half
@@ -81,7 +49,7 @@ section .text
         vmulpd ymm2, ymm0, ymm2 ;derivatives wrt weights
 
         vmovupd [rdi], ymm1 
-        add rdi, 2*SECOND_HIDDEN_LAYER_SIZE*4*YMM_BYTE_LENGTH ;upper half
+        add rdi, OUTPUT_SIZE*SECOND_HIDDEN_LAYER_SIZE*YMM_BYTE_LENGTH ;upper half
         vmovupd [rdi], ymm2 ;outputting to memory
 
         AVXPOP5
@@ -215,17 +183,50 @@ section .text
     ;
     ; param weight_der
     ; param zs_der
-    ; param activations
+    ; param activations for prev layer
     ; param output size (bytes)
-    ; param prev layer input size (not bytes)
+    ; param prev layer input size (bytes)
     CalcWeightDer:
+        PUSHREGS
+        push r8
+        push r9
+        AVXPUSH ymm0
+        AVXPUSH ymm1
 
+        mov rax, [rbp+8*2] ;prev layer input size (bytes)
+        mov rbx, [rbp+8*3] ;output size (bytes)
+        mov rcx, [rbp+8*4] ;prev activation offset
+        mov rdx, [rbp+8*5] ;zs der offset
+        mov rdi, [rbp+8*6] ;weight der offset
+
+        xor r9, r9 ;loop counter over all weights
+        xor rsi, rsi ;loop counter over input
+    .loop_over_input_layer:
+        xor r8, r8 ;loop over prev
+        .loop_over_prev_layer:
+            vmovupd ymm0, [rdx+rsi] ;zs der
+            vmovupd ymm1, [rcx+r8] ;prev activation
+            vmulpd ymm0, ymm1, ymm0 ;weight der
+            vmovupd [rdi+r9], ymm0 ;outputting
+
+            add r9, YMM_BYTE_LENGTH
+            add r8, YMM_BYTE_LENGTH
+            cmp r8, rax
+            jne .loop_over_prev_layer
+        add rsi, YMM_BYTE_LENGTH
+        cmp rsi, rbx
+        jne .loop_over_input_layer
+
+        AVXPOP ymm1
+        AVXPOP ymm0
+        pop r8
+        POPREGS
     ret 4*8
 
-    ; Backpropagates a layer.
+    ; Backpropagates a layer, which is not the last one.
     ;
     ; param input offset 
-    ; param output offset
+    ; param der input offset
     ; param input size (not bytes)
     ; param output size (not bytes)
     ; param prev layer input size (not bytes)
@@ -237,5 +238,7 @@ section .text
         mov rcx, [rbp+8*4] ;input size
         mov rdx, [rbp+8*5] ;output offset
         mov rdi, [rbp+8*6] ;input offset
+
+
         POPREGS
     ret 4*8
