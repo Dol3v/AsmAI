@@ -33,7 +33,7 @@ section .text
         pop rbp
     ret 
 
-    ; Prints to the screen if host computer is AVX2 compatible.
+    ; Prints to the screen if host computer is AVX2 compatible, and exits the process if not.
     ;
     ; param: addr of AVX2 compatibility message
     ; param: addr of AVX2 incompatibility message
@@ -51,6 +51,7 @@ section .text
 
         mov rbx, [rbp + 8*2] ;incompatibility message offset
         PRINT rbx
+        EXIT ;exits the program
         jmp PrintAVX2Compatible_finish
 
     AVX2_compatible:
