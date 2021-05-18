@@ -1,7 +1,7 @@
 
 ; Linear algebra methods to be used in Forward Prop
 
-%include "util.asm"
+%include "math.asm"
 
 section .text
 
@@ -24,13 +24,13 @@ MatrixVectorMultiply:
     push r8
 
     mov rax, ONE_F
-    BROADCASTREG ymm2, rax, xmm2 ;vector of ones
+    BROADCASTREG ymm3, rax, xmm3 ;vector of ones
 
-    mov rsi, [rbp+8*6] ;width
-    mov rdi, [rbp+8*5] ;height
-    mov rax, [rbp+8*4] ;matrix offset
-    mov rbx, [rbp+8*3] ;vector offset
-    mov rcx, [rbp+8*2] ;output offset
+    mov rsi, [rbp+8*2] ;width
+    mov rdi, [rbp+8*3] ;height
+    mov rax, [rbp+8*6] ;matrix offset
+    mov rbx, [rbp+8*5] ;vector offset
+    mov rcx, [rbp+8*4] ;output offset
 
     xor r8, r8 ;loop counter over vector
     .loop_over_n:
@@ -40,8 +40,8 @@ MatrixVectorMultiply:
             vmovupd ymm0, [rax + rdx] ;row segment of matrix
             vmovupd ymm1, [rbx + rdx] ;col segment of vector
             vmulpd ymm0, ymm1, ymm0 ;multiply
-            DOTPROD ymm0, ymm0, ymm2, xmm0, xmm1 ;sum em up
-            vaddsd ymm2, ymm2, ymm0 ;accumulate
+            DOTPROD ymm0, ymm0, ymm3, xmm0, xmm1 ;sum em up
+            vaddsd xmm2, xmm2, xmm0 ;accumulate
 
             add rdx, YMM_BYTE_LENGTH
             cmp rdx, rsi
